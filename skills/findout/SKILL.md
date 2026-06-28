@@ -73,6 +73,27 @@ print(result.answer)
 
 Include verdict ("X verified, Y uncertain, Z contradicted") and citations. Catch ConnectionError → answer from knowledge. Catch ImportError → run manual 5-pass verification.
 
+## Hermes Plugin — `/findout` Slash Command
+
+A Hermes plugin at `plugins/hermes/` registers `/findout <query>` as a native
+slash command in TUI, CLI, and gateway sessions.
+
+**Install:**
+```bash
+mkdir -p ~/.hermes/plugins/findout
+cp -r plugins/hermes/* ~/.hermes/plugins/findout/
+```
+
+Then `/reset` the session or restart gateway. The plugin shells out to the
+`findout` CLI, so `findout run --skip-gate <query>` must work from your shell
+(requires `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, `FINDOUT_API_KEY` in `.env`).
+
+**Uninstall:** `rm -rf ~/.hermes/plugins/findout && /reset`
+
 ## Known Issues
 
-**Trigger collision with grounded-research:** `find` in grounded-research's triggers is a substring of `findout`. ALWAYS use `/findout <query>` slash command for reliable routing — it's wired across CLI, TUI, and gateway with a hard-routed prompt instruction that forces pipeline execution.
+**Trigger collision with grounded-research:** `find` in grounded-research's
+triggers is a substring of `findout`. For reliable agent-side auto-invocation,
+you may need to trim `grounded-research`'s trigger list. The `/findout` slash
+command (plugin) bypasses this entirely since it's routed by command name, not
+NL trigger matching.

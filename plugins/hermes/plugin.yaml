@@ -1,0 +1,4 @@
+name: findout
+version: 1.0.0
+description: "Run the findout verification pipeline via /findout <query> — evidence-prediction, 3-angle search, multi-pass verification."
+author: "findout contributors"
