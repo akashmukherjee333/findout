@@ -9,7 +9,20 @@ trigger: findout, self-verify, verify answer, fact check, evidence prediction, c
 
 # findout — ACTIVE WORKFLOW
 
-**THIS IS NOT DOCUMENTATION. THIS IS A WORKFLOW TO EXECUTE.**
+**⚠️ HARD RULE — READ THIS FIRST ⚠️**
+
+**If the user's message includes a query (anything after the trigger word), you MUST:**
+1. Extract that query from their message
+2. Run the findout pipeline on it using `execute_code`
+3. Return the pipeline output as your answer
+
+**DO NOT:**
+- Describe what this skill does instead of running it
+- Ask "what claim would you like verified?" — the query is already in the message
+- Explain the pipeline variants or configuration
+- Provide a summary of the skill's contents
+
+The user's message IS the query. Execute immediately. If they said `/findout how to X`, the query is `"how to X"`.
 
 When the user asks a research/factual question, you MUST run this pipeline using the Python API via execute_code. Do NOT just answer from your own knowledge — use the pipeline to verify claims against the web.
 
@@ -115,28 +128,13 @@ except Exception as e:
     print("FALLING BACK TO DIRECT ANSWER")
 ```
 
-## Three Pipelines (Reference)
+## Three Pipelines (Reference — DO NOT PRINT)
 
-### Pipeline 1: `base` (5 passes)
-1. Generate cold answer (temp=0)
-2. Extract atomic claims
-3. Predict evidence + surprises per claim
-4. 3-angle web search per claim (evidence-biased, neutral, antithesis)
-5. Rewrite with citations + uncertainty markers
-
-### Pipeline 2: `consistency` (multi-sample)
-1. Generate N=3 at temp=0.7
-2. Extract claims from all, deduplicate by meaning
-3. Tag by consensus: ✅ all 3 agree, ⚠️ 2/3 agree, ❌ all disagree
-4. Search only ⚠️+❌ claims
-5. Majority answer with conflict notes
-
-### Pipeline 3: `hybrid` (combined, for small models)
-1. Generate N=2 at temp=0.7
-2. If both agree on ALL claims → short-circuit (return directly, no search)
-3. If they disagree → extract conflicting claims only
-4. Search only conflicting claims
-5. Rewrite with conflicts marked explicitly
+| Variant | When | Samples | Cost | Mechanism |
+|---------|------|---------|------|-----------|
+| `base` | 32B+ models | 1 (cold) | 3.5x | Gen → Extract → Predict → Search → Rewrite |
+| `consistency` | 14B-32B, self-reinforcement risk | 3 (temp=0.7) | 8-9x | Majority consensus, search only conflicts |
+| `hybrid` | 3B-14B, shaky instruction-following | 2 (temp=0.7) | 4-5x | Short-circuit on full agreement, search conflicts otherwise |
 
 ## Config
 
