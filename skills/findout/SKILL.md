@@ -96,8 +96,4 @@ shell environment. Required keys: `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, and
 
 ## Known Issues
 
-**Trigger collision with grounded-research:** `find` in grounded-research's
-triggers is a substring of `findout`. For reliable agent-side auto-invocation,
-you may need to trim `grounded-research`'s trigger list. The `/findout` slash
-commands (plugin) bypass this entirely since they're routed by command name, not
-NL trigger matching. Prefer `/foundit` or `/findout` when you need deterministic invocation.
+**Trigger collision with grounded-research:** Resolved — the grounded-research skill uses YAML list triggers (not comma-separated) and does not include `find` as a trigger. The `/findout` and `/foundit` slash commands (plugin) bypass NL matching entirely. Prefer the slash commands for deterministic invocation.
