@@ -34,7 +34,7 @@ def extract_claims(client: LLMClient, answer: str, max_claims: int = 12) -> list
         system=_SYSTEM,
         prompt=f"Extract claims from this text:\n\n{answer}",
         temperature=0.0,
-        max_tokens=1024,
+        max_tokens=4096,
     )
 
     # Parse bullet points

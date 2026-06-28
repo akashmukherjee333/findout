@@ -4,7 +4,7 @@ description: >
   ACTIVE AGENT WORKFLOW for three deterministic single-model verification pipelines.
   Uses evidence-prediction (not confidence tags) + 3-angle web search.
   Base (3.5x), consistency (8-9x), hybrid (4-5x, for small models).
-trigger: findout, self-verify, verify answer, fact check, evidence prediction, claim verification, research pipeline, pipeline run
+trigger: findout, foundit, self-verify, verify answer, fact check, evidence prediction, claim verification, research pipeline, pipeline run
 ---
 
 # findout — ACTIVE WORKFLOW
@@ -60,7 +60,7 @@ import os
 config = Config(
     llm=LLMConfig(model=os.environ["FINDOUT_MODEL"],
         base_url=os.environ["FINDOUT_BASE_URL"],
-        api_key=os.getenv("FINDOUT_API_KEY",""), max_tokens=4096, timeout_seconds=120),
+        api_key=os.getenv("FINDOUT_API_KEY",""), max_tokens=int(os.getenv("FINDOUT_MAX_TOKENS", "4096")), timeout_seconds=int(os.getenv("FINDOUT_TIMEOUT", "120"))),
     search=SearchConfig(provider="duckduckgo",max_results_per_query=5,max_queries_per_claim=3),
     pipeline=PipelineConfig(default_variant="hybrid",gate_enabled=True,hybrid_samples=2,max_claims_per_answer=12,short_circuit_on_agreement=True),
 )
@@ -73,10 +73,11 @@ print(result.answer)
 
 Include verdict ("X verified, Y uncertain, Z contradicted") and citations. Catch ConnectionError → answer from knowledge. Catch ImportError → run manual 5-pass verification.
 
-## Hermes Plugin — `/findout` Slash Command
+## Hermes Plugin — `/findout` and `/foundit` Slash Commands
 
-A Hermes plugin at `plugins/hermes/` registers `/findout <query>` as a native
-slash command in TUI, CLI, and gateway sessions.
+A Hermes plugin at `plugins/hermes/` registers `/findout <query>` and
+`/foundit <query>` as native slash commands in TUI, CLI, and gateway sessions.
+`/foundit` is an alias for the same pipeline because the user invokes that name.
 
 **Install:**
 ```bash
@@ -85,8 +86,11 @@ cp -r plugins/hermes/* ~/.hermes/plugins/findout/
 ```
 
 Then `/reset` the session or restart gateway. The plugin shells out to the
-`findout` CLI, so `findout run --skip-gate <query>` must work from your shell
-(requires `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, `FINDOUT_API_KEY` in `.env`).
+`findout` CLI. It loads `~/.hermes/.env` before launching the subprocess, so
+fresh Hermes sessions do not need the `FINDOUT_*` variables exported in the
+shell environment. Required keys: `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, and
+`FINDOUT_API_KEY`. For reasoning models, set `FINDOUT_MAX_TOKENS=32768` and
+`FINDOUT_TIMEOUT=300`.
 
 **Uninstall:** `rm -rf ~/.hermes/plugins/findout && /reset`
 
@@ -95,5 +99,5 @@ Then `/reset` the session or restart gateway. The plugin shells out to the
 **Trigger collision with grounded-research:** `find` in grounded-research's
 triggers is a substring of `findout`. For reliable agent-side auto-invocation,
 you may need to trim `grounded-research`'s trigger list. The `/findout` slash
-command (plugin) bypasses this entirely since it's routed by command name, not
-NL trigger matching.
+commands (plugin) bypass this entirely since they're routed by command name, not
+NL trigger matching. Prefer `/foundit` or `/findout` when you need deterministic invocation.
