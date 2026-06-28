@@ -15,6 +15,10 @@ class TestConfig:
 
     def test_from_env_requires_vars(self, monkeypatch):
         import pytest
+        # Unset env vars so the test works regardless of the running environment
+        monkeypatch.delenv("FINDOUT_MODEL", raising=False)
+        monkeypatch.delenv("FINDOUT_BASE_URL", raising=False)
+        monkeypatch.delenv("FINDOUT_API_KEY", raising=False)
         with pytest.raises(ValueError, match="FINDOUT_MODEL and FINDOUT_BASE_URL"):
             Config.from_env()
 
