@@ -22,13 +22,21 @@ Single-search-then-judge misses the model's blind spots. Three angles:
 
 If the evidence-biased angle finds support but the antithesis and neutral don't — likely hallucination (the model's prediction of evidence was itself confabulated).
 
-## Pipeline Variant Tradeoffs
+## Why the package now uses one pipeline
 
-| Variant | Design goal | When the extra cost is worth it |
-|---------|------------|--------------------------------|
-| `base` (3.5x) | Structural verification | Reliable models (32B+) on simple factual claims. One cold pass is enough if the model is good. |
-| `consistency` (8-9x) | Anti-confirmation-bias | Models prone to self-reinforcement (14-32B). Three samples ensure the same hallucination is unlikely in all — the consensus signal is strong. |
-| `hybrid` (4-5x) | Shaky-model rescue | Small models (3-14B) with poor instruction following. Short-circuit on agreement saves tokens when the model is on solid ground. |
+The old multi-sample branches (`consistency`, `hybrid`) added cost, config surface,
+and maintenance burden. They also conflicted with the user's preference: no extra
+sampling branch, no separate env-var driven execution path, no side-channel model
+selection when Hermes already has a live model loaded.
+
+So the package is now intentionally narrower:
+- one deterministic pipeline (`base`)
+- one model
+- one search strategy
+- explicit runtime config when used standalone
+- no required `FINDOUT_*` env-var contract for Hermes-side usage
+
+Less surface area. Fewer lies. Easier to keep correct.
 
 ## The Fuzzy Explainer Protocol
 
@@ -39,16 +47,8 @@ For abstract/"what if" queries where the user is thinking through 3D ideas in a 
 3. **One-word corrections** — let the user correct with a single word ("simpler", "faster", "less") instead of requiring full re-explanation
 4. **No multi-model fan-out** — the user explicitly rejects asking multiple models; single-model deterministic passes only
 
-This protocol shaped the `hybrid` variant's design (short-circuit on agreement = zero friction when the model correctly understood).
+## Empirical cost intuition
 
-## Empirical Cost Data
-
-Measured against qwen3.5:14b via Ollama (DuckDuckGo search):
-
-| Pipeline | Tokens consumed | Wall-clock (3 claims) | Search calls |
-|----------|----------------|----------------------|--------------|
-| Base | ~7,500 | ~25s | 3-9 |
-| Consistency | ~18,000 | ~60s | 0-9 |
-| Hybrid | ~9,000 | ~30s | 0-6 |
-
-Search is the bottleneck — each DuckDuckGo call takes 2-5s. Short-circuit variants (hybrid on agreement, consistency on ≥2/3 consensus) save the most time by skipping search entirely.
+Measured historically against qwen3.5:14b via Ollama (DuckDuckGo search), the
+single deterministic path was the stable baseline. The removed branches were more
+expensive and harder to justify operationally than they were useful.

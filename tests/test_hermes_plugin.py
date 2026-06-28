@@ -40,20 +40,14 @@ def test_plugin_env_loads_hermes_dotenv(monkeypatch, tmp_path):
     plugin = _load_plugin()
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    (hermes_home / ".env").write_text(
-        "FINDOUT_MODEL=test-model\n"
-        "FINDOUT_BASE_URL=http://example.test/v1\n"
-        "FINDOUT_TIMEOUT=301\n"
-    )
+    (hermes_home / ".env").write_text("FINDOUT_TIMEOUT=301\nEXTRA_FLAG=1\n")
     monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.delenv("FINDOUT_MODEL", raising=False)
-    monkeypatch.delenv("FINDOUT_BASE_URL", raising=False)
     monkeypatch.delenv("FINDOUT_TIMEOUT", raising=False)
+    monkeypatch.delenv("EXTRA_FLAG", raising=False)
 
     env = plugin._plugin_env()
 
-    assert env["FINDOUT_MODEL"] == "test-model"
-    assert env["FINDOUT_BASE_URL"] == "http://example.test/v1"
+    assert env["EXTRA_FLAG"] == "1"
     assert plugin._timeout_from_env(env) == 301
 
 
@@ -61,10 +55,10 @@ def test_plugin_env_does_not_override_existing_env(monkeypatch, tmp_path):
     plugin = _load_plugin()
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    (hermes_home / ".env").write_text("FINDOUT_MODEL=from-file\n")
+    (hermes_home / ".env").write_text("EXTRA_FLAG=from-file\n")
     monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    monkeypatch.setenv("FINDOUT_MODEL", "from-process")
+    monkeypatch.setenv("EXTRA_FLAG", "from-process")
 
     env = plugin._plugin_env()
 
-    assert env["FINDOUT_MODEL"] == "from-process"
+    assert env["EXTRA_FLAG"] == "from-process"

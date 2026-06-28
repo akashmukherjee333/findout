@@ -1,9 +1,8 @@
 ---
 name: findout
 description: >
-  ACTIVE AGENT WORKFLOW for three deterministic single-model verification pipelines.
+  ACTIVE AGENT WORKFLOW for a deterministic single-model verification pipeline.
   Uses evidence-prediction (not confidence tags) + 3-angle web search.
-  Base (3.5x), consistency (8-9x), hybrid (4-5x, for small models).
 trigger: findout, foundit, self-verify, verify answer, fact check, evidence prediction, claim verification, research pipeline, pipeline run
 ---
 
@@ -19,21 +18,27 @@ trigger: findout, foundit, self-verify, verify answer, fact check, evidence pred
 **DO NOT:**
 - Describe what this skill does instead of running it
 - Ask "what claim would you like verified?" — the query is already in the message
-- Explain the pipeline variants or configuration
+- Explain old pipeline variants or legacy env-var setup
 - Provide a summary of the skill's contents
 
 The user's message IS the query. Execute immediately.
 
+## Core rule
+
+findout is now **one deterministic pipeline**. No multi-sample branch. No consistency/hybrid variant selection. No requirement for `FINDOUT_*` env vars inside Hermes-driven usage.
+
+When this skill is used from Hermes, generation should ride the currently loaded model context. If the package is run standalone outside Hermes, the caller can still construct `Config` explicitly or pass `--model` / `--base-url` to the CLI.
+
 ## STEP 0: Gate Check
 
 ```python
-from findout.gate import Gate, GateConfig, LLMConfig
-import os
-gate = Gate(GateConfig(), LLMConfig(
-    model=os.environ["FINDOUT_MODEL"],
-    base_url=os.environ["FINDOUT_BASE_URL"],
-    api_key=os.getenv("FINDOUT_API_KEY", ""),
-))
+from findout.gate import Gate
+from findout.config import Config, LLMConfig
+
+gate = Gate(
+    Config().pipeline.gate,
+    LLMConfig(model=model, base_url=base_url, api_key=api_key),
+)
 category, reason = gate.classify_with_reason(query)
 print(f"Gate: {category} ({reason})")
 ```
@@ -41,37 +46,31 @@ print(f"Gate: {category} ({reason})")
 - **"casual"** → answer directly, no pipeline
 - **"visionary"** → proceed
 
-> FINDOUT_MODEL, FINDOUT_BASE_URL, and FINDOUT_API_KEY are read from the environment. Set them to ANY OpenAI-compatible provider. Examples: OpenAI, Anthropic (via proxy), vLLM, Ollama, Groq, Together, etc.
-
-## STEP 1: Choose variant
-
-| Model size | Pipeline | Samples | Cost |
-|------------|----------|---------|------|
-| 3B-14B     | `hybrid` | 2       | 4-5x |
-| 14B-32B    | `consistency` | 3 | 8-9x |
-| 32B+       | `base` | 1 (cold) | 3.5x |
-
-## STEP 2: Run via execute_code
+## STEP 1: Run via execute_code
 
 ```python
 from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
 from findout.pipeline import SelfVerifyPipeline
-import os
+
 config = Config(
-    llm=LLMConfig(model=os.environ["FINDOUT_MODEL"],
-        base_url=os.environ["FINDOUT_BASE_URL"],
-        api_key=os.getenv("FINDOUT_API_KEY",""), max_tokens=int(os.getenv("FINDOUT_MAX_TOKENS", "4096")), timeout_seconds=int(os.getenv("FINDOUT_TIMEOUT", "120"))),
-    search=SearchConfig(provider="duckduckgo",max_results_per_query=5,max_queries_per_claim=3),
-    pipeline=PipelineConfig(default_variant="hybrid",gate_enabled=True,hybrid_samples=2,max_claims_per_answer=12,short_circuit_on_agreement=True),
+    llm=LLMConfig(
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        max_tokens=max_tokens,
+        timeout_seconds=timeout_seconds,
+    ),
+    search=SearchConfig(provider="duckduckgo", max_results_per_query=5, max_queries_per_claim=3),
+    pipeline=PipelineConfig(default_variant="base", gate_enabled=True, max_claims_per_answer=12),
 )
 pipe = SelfVerifyPipeline(config)
-result = pipe.run(query="QUERY", pipeline="hybrid")
+result = pipe.run(query="QUERY", pipeline="base")
 print(result.answer)
 ```
 
-## STEP 3: Present results
+## STEP 2: Present results
 
-Include verdict ("X verified, Y uncertain, Z contradicted") and citations. Catch ConnectionError → answer from knowledge. Catch ImportError → run manual 5-pass verification.
+Include verdict ("X verified, Y uncertain, Z contradicted") and citations. Catch connection/import failures honestly. If the package can't run, fall back to manual grounded research rather than fabricating pipeline output.
 
 ## Hermes Plugin — `/findout` and `/foundit` Slash Commands
 
@@ -86,11 +85,9 @@ cp -r plugins/hermes/* ~/.hermes/plugins/findout/
 ```
 
 Then `/reset` the session or restart gateway. The plugin shells out to the
-`findout` CLI. It loads `~/.hermes/.env` before launching the subprocess, so
-fresh Hermes sessions do not need the `FINDOUT_*` variables exported in the
-shell environment. Required keys: `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, and
-`FINDOUT_API_KEY`. For reasoning models, set `FINDOUT_MAX_TOKENS=32768` and
-`FINDOUT_TIMEOUT=300`.
+`findout` CLI. It no longer documents `FINDOUT_MODEL`, `FINDOUT_BASE_URL`, or
+`FINDOUT_API_KEY` as required Hermes-side setup. Standalone CLI runs should pass
+`--model` and `--base-url` explicitly.
 
 **Uninstall:** `rm -rf ~/.hermes/plugins/findout && /reset`
 

@@ -1,9 +1,8 @@
 # findout
 
-**Deterministic, single-model verification pipelines for LLM outputs.**
-Three-tier architecture: base → multi-sample consistency → hybrid for small models.
+**Deterministic, single-model verification pipeline for LLM outputs.**
 
-No multi-model fan-out. No training. No fine-tuning. One model, multiple deterministic passes, grounded in real web search.
+No multi-model fan-out. No training. No fine-tuning. One model, deterministic passes, grounded in real web search.
 
 [![GitHub](https://img.shields.io/badge/GitHub-findout-181717?logo=github)](https://github.com/akashmukherjee333/findout)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -13,7 +12,7 @@ No multi-model fan-out. No training. No fine-tuning. One model, multiple determi
 
 ## The Problem
 
-LLMs hallucinate. They also *sound confident while doing it*. Multi-model fan-out (asking N models the same question) is expensive and inconsistent. Asking the same model to "check itself" fails because models can't reliably distinguish "I know this" from "I'm making this up."
+LLMs hallucinate. They also *sound confident while doing it*. Multi-model fan-out is expensive and inconsistent. Asking the same model to "check itself" fails because models can't reliably distinguish "I know this" from "I'm making this up."
 
 ## The Solution
 
@@ -29,10 +28,10 @@ The web is the ground truth. The model just suggests *where to look*.
 
 ---
 
-## Three Pipelines
+## The Pipeline
 
-### Pipeline 1: `base` (Self-Verify)
-**Best for:** 32B+ models, API-served models
+### `base` (Self-Verify)
+**Best for:** any reliable OpenAI-compatible endpoint where you want one deterministic verification pass.
 
 | Pass | What it does | Cost |
 |------|-------------|------|
@@ -43,20 +42,6 @@ The web is the ground truth. The model just suggests *where to look*.
 | 5 | Rewrite with citations | ~3,500 |
 | **Total** | | **~3.5x baseline** |
 
-### Pipeline 2: `consistency` (Multi-Sample)
-**Best for:** 14B-32B models, local models, self-reinforcement risk
-
-Generates N=3 answers at temp=0.7. Claims with consensus ≥2/3 pass through; conflicting claims get searched. Catches the "confidently wrong" case because the same hallucination rarely appears in all 3 samples.
-
-**Cost:** ~8-9x baseline | **Reliability:** Highest of all three variants.
-
-### Pipeline 3: `hybrid` (Combined, Low-Param)
-**Best for:** 3B-14B local models
-
-Generates N=2 answers. If they agree — short-circuit, no search. If they disagree — search only the conflicting claims. Designed for models with shaky instruction-following.
-
-**Cost:** ~4-5x baseline | **Reliability:** Better than base for <14B models.
-
 ---
 
 ## Quick Start
@@ -64,42 +49,41 @@ Generates N=2 answers. If they agree — short-circuit, no search. If they disag
 ```bash
 pip install findout
 
-# Set your LLM endpoint (any OpenAI-compatible provider)
-export FINDOUT_MODEL=gpt-4o
-export FINDOUT_BASE_URL=https://api.openai.com/v1
-export FINDOUT_API_KEY=sk-...
-
-# Run the pipeline
-findout run "What would an OS look like if the frontend was entirely AI-generated?"
-
-# Alternatively, pass params directly (works with any provider):
-findout run "Explain PostgreSQL MVCC" \
+findout run "What would an OS look like if the frontend was entirely AI-generated?" \
   --model gpt-4o \
   --base-url https://api.openai.com/v1 \
-  --api-key sk-... \
-  --pipeline hybrid
+  --api-key sk-...
 
 # Gate-only mode (just classify, don't execute)
-findout gate "squirrels are known for storing nuts"
+findout gate "squirrels are known for storing nuts" \
+  --model gpt-4o \
+  --base-url https://api.openai.com/v1
 # → casual
-findout gate "I want a system where AI generates the frontend at runtime"
+
+findout gate "I want a system where AI generates the frontend at runtime" \
+  --model gpt-4o \
+  --base-url https://api.openai.com/v1
 # → visionary
 ```
 
 ### Python API
 
 ```python
-from findout import SelfVerifyPipeline
-import os
+from findout import SelfVerifyPipeline, Config, LLMConfig
 
 pipeline = SelfVerifyPipeline(
-    model=os.environ["FINDOUT_MODEL"],
-    base_url=os.environ["FINDOUT_BASE_URL"],
+    Config(
+        llm=LLMConfig(
+            model="gpt-4o",
+            base_url="https://api.openai.com/v1",
+            api_key="sk-...",
+        )
+    )
 )
 
 result = pipeline.run(
     query="Design a distributed task scheduler with AI-driven prioritization.",
-    pipeline="hybrid",  # "base" | "consistency" | "hybrid"
+    pipeline="base",
 )
 
 print(result.answer)
@@ -130,14 +114,6 @@ cp -r skills/findout ~/.hermes/skills/research/
 ln -s ~/projects/findout/skills/findout ~/.hermes/skills/research/findout
 ```
 
-### One-liner install
-
-```bash
-pip install findout && \
-ln -s "$(python3 -c 'import findout; import os; print(os.path.dirname(findout.__file__))')/../skills/findout" \
-  ~/.hermes/skills/research/findout
-```
-
 ### How it works in Hermes
 
 The skill is an **active agent workflow**, not passive documentation. When a user asks a research question, the Hermes agent:
@@ -145,32 +121,11 @@ The skill is an **active agent workflow**, not passive documentation. When a use
 1. **Gates** the query — is this casual or visionary?
 2. **Runs the pipeline** via `execute_code` — generates, extracts, predicts, searches, rewrites
 3. **Returns a verified answer** with citations + claim-by-claim verdict
-4. **Falls back gracefully** if the LLM endpoint or web search is unavailable
+4. **Falls back honestly** if the LLM endpoint or web search is unavailable
 
-Set environment variables to configure:
+Inside Hermes, this flow should use the currently loaded model context rather than requiring a separate `FINDOUT_*` env-var setup.
 
-```bash
-# Required — must point to any OpenAI-compatible endpoint
-export FINDOUT_MODEL="gpt-4o"
-export FINDOUT_BASE_URL="https://api.openai.com/v1"
-export FINDOUT_API_KEY="sk-..."
-
-# Optional
-export FINDOUT_SEARCH_PROVIDER="duckduckgo"
-export FINDOUT_PIPELINE="hybrid"
-export FINDOUT_GATE_ENABLED="true"
-```
-
-Or configure in `~/.hermes/config.yaml`:
-
-```yaml
-env:
-  FINDOUT_MODEL: gpt-4o
-  FINDOUT_BASE_URL: https://api.openai.com/v1
-  FINDOUT_PIPELINE: hybrid
-```
-
-Works with any OpenAI-compatible provider — OpenAI, vLLM, Ollama, Groq, Together, Anthropic (via proxy), etc.
+For standalone usage outside Hermes, configure explicitly in code or via CLI flags.
 
 ---
 
@@ -224,28 +179,28 @@ If nothing returns → **speculative** (marked as unverified).
                     └──────┬───────┘
                            ▼
                     ┌──────────────┐
-                    │   Pipeline   │  ← base / consistency / hybrid
-                    │  Orchestrator│
+                    │   Pipeline   │
+                    │ Orchestrator │
                     └──────┬───────┘
                            ▼
               ┌─────────────────────┐
-              │  Stage: Generate    │  ← temp=0 (or 0.7 for multi-sample)
+              │  Stage: Generate    │
               └──────────┬──────────┘
                          ▼
               ┌─────────────────────┐
-              │  Stage: Extract     │  ← atomic claims
+              │  Stage: Extract     │
               └──────────┬──────────┘
                          ▼
               ┌─────────────────────┐
-              │  Stage: Predict     │  ← evidence + surprise per claim
+              │  Stage: Predict     │
               └──────────┬──────────┘
                          ▼
               ┌─────────────────────┐
-              │  Stage: Search      │  ← 3-angle web search per claim
+              │  Stage: Search      │
               └──────────┬──────────┘
                          ▼
               ┌─────────────────────┐
-              │  Stage: Rewrite     │  ← verified + speculative markers
+              │  Stage: Rewrite     │
               └──────────┬──────────┘
                          ▼
                     ┌──────────────┐
@@ -257,16 +212,9 @@ If nothing returns → **speculative** (marked as unverified).
 
 ## Configuration
 
-All configuration comes from environment variables — no hardcoded defaults.
-`FINDOUT_MODEL` and `FINDOUT_BASE_URL` are **required**.
+All runtime configuration is explicit now.
 
 ```python
-from findout.config import Config
-
-# Load from environment (raises ValueError if FINDOUT_MODEL/BASE_URL unset)
-config = Config.from_env()
-
-# Or construct explicitly:
 from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
 
 config = Config(
@@ -276,34 +224,19 @@ config = Config(
         api_key="sk-...",
     ),
     search=SearchConfig(
-        provider="duckduckgo",  # or "serpapi", "custom"
+        provider="duckduckgo",
         max_results_per_query=5,
     ),
     pipeline=PipelineConfig(
-        default_variant="hybrid",
-        consistency_samples=3,
+        default_variant="base",
         max_claims_per_answer=12,
         temp_generate=0.0,
-        temp_consistency=0.7,
         gate_enabled=True,
     ),
 )
 ```
 
-### Environment variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `FINDOUT_MODEL` | **Yes** | — | Model name (e.g. `gpt-4o`, `claude-sonnet-4`) |
-| `FINDOUT_BASE_URL` | **Yes** | — | API endpoint (e.g. `https://api.openai.com/v1`) |
-| `FINDOUT_API_KEY` | No | `""` | API key |
-| `FINDOUT_MAX_TOKENS` | No | `4096` | Max generation tokens |
-| `FINDOUT_TIMEOUT` | No | `120` | Request timeout (s) |
-| `FINDOUT_SEARCH_PROVIDER` | No | `duckduckgo` | Search backend |
-| `FINDOUT_SEARCH_RESULTS` | No | `5` | Results per query |
-| `FINDOUT_PIPELINE` | No | `hybrid` | Default pipeline variant |
-| `FINDOUT_GATE_ENABLED` | No | `true` | Enable gate classifier |
-| `FINDOUT_SHORT_CIRCUIT` | No | `true` | Skip search on full agreement |
+No required `FINDOUT_MODEL` / `FINDOUT_BASE_URL` contract remains for Hermes-side usage.
 
 ---
 
@@ -338,12 +271,10 @@ findout/
 │   ├── __init__.py
 │   ├── config.py           # Dataclasses (LLM, Search, Pipeline)
 │   ├── gate.py             # 50-token casual vs visionary classifier
-│   ├── llm.py              # OpenAI-compatible client (sync + async + batch)
+│   ├── llm.py              # OpenAI-compatible client
 │   ├── search_client.py    # DuckDuckGo search with 3-angle results
 │   ├── result.py           # PipelineResult dataclass
-│   ├── pipeline.py         # Orchestrator + all 3 variants
-│   ├── consistency.py      # N-sample consensus pipeline
-│   ├── hybrid.py           # 2-sample short-circuit pipeline
+│   ├── pipeline.py         # Deterministic pipeline orchestrator
 │   ├── cli.py              # Typer CLI
 │   └── stages/
 │       ├── __init__.py

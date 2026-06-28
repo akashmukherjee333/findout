@@ -1,59 +1,61 @@
-"""CLI entry point for findout.
-
-Usage:
-  self-verify run "your research query here"
-  self-verify gate "is this casual or visionary?"
-"""
+"""CLI entry point for findout."""
 
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.table import Table
-from findout.config import Config
+from findout.config import Config, LLMConfig
 from findout.pipeline import SelfVerifyPipeline
 from findout.gate import Gate
 
 app = typer.Typer(
     name="findout",
-    help="Single-model, multi-pass verification pipelines for LLM outputs.",
+    help="Single-model, multi-pass verification pipeline for LLM outputs.",
 )
 console = Console()
+
+
+def _build_config(
+    model: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: int,
+    max_tokens: int,
+) -> Config:
+    return Config(
+        llm=LLMConfig(
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            timeout_seconds=timeout_seconds,
+            max_tokens=max_tokens,
+        )
+    )
 
 
 @app.command()
 def run(
     query: str = typer.Argument(..., help="The query to verify"),
-    model: str = typer.Option(None, "--model", "-m", help="Model name override"),
-    base_url: str = typer.Option(None, "--base-url", "-u", help="API base URL"),
-    api_key: str = typer.Option(None, "--api-key", "-k", help="API key"),
-    pipeline: str = typer.Option(
-        "base", "--pipeline", "-p",
-        help="Pipeline variant: base, consistency, hybrid",
-    ),
+    model: str = typer.Option(..., "--model", "-m", help="Model name"),
+    base_url: str = typer.Option(..., "--base-url", "-u", help="API base URL"),
+    api_key: str = typer.Option("", "--api-key", "-k", help="API key"),
     skip_gate: bool = typer.Option(
-        False, "--skip-gate", "-g",
-        help="Skip gate classifier, always run pipeline",
+        False, "--skip-gate", "-g", help="Skip gate classifier, always run pipeline"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show intermediate steps"),
+    timeout_seconds: int = typer.Option(120, "--timeout", help="Request timeout in seconds"),
+    max_tokens: int = typer.Option(4096, "--max-tokens", help="Max generation tokens"),
 ):
     """Run the verification pipeline on a query."""
-    config = Config.from_env()
+    config = _build_config(model, base_url, api_key, timeout_seconds, max_tokens)
 
-    # CLI overrides
-    if model:
-        config.llm.model = model
-    if base_url:
-        config.llm.base_url = base_url
-    if api_key:
-        config.llm.api_key = api_key
-
-    console.print(f"[bold]Pipeline:[/bold] {pipeline}")
+    console.print("[bold]Pipeline:[/bold] base")
     console.print(f"[bold]Model:[/bold] {config.llm.model}")
     console.print(f"[bold]Query:[/bold] {query[:120]}")
     console.print()
 
     pipe = SelfVerifyPipeline(config)
-    result = pipe.run(query, pipeline=pipeline, skip_gate=skip_gate)
+    result = pipe.run(query, pipeline="base", skip_gate=skip_gate)
 
     if result.skipped_pipeline:
         console.print("[yellow]Gate classified as casual — answering directly.[/yellow]")
@@ -77,8 +79,10 @@ def run(
         t2.add_column("Status")
         for csr in result.search_results:
             status = (
-                "[green]✓ Verified[/green]" if csr.supports_claim
-                else "[red]✗ Contradicted[/red]" if csr.contradicts_claim
+                "[green]✓ Verified[/green]"
+                if csr.supports_claim
+                else "[red]✗ Contradicted[/red]"
+                if csr.contradicts_claim
                 else "[yellow]? Uncertain[/yellow]"
             )
             t2.add_row(csr.claim_text[:80], status)
@@ -97,14 +101,21 @@ def run(
 @app.command()
 def gate(
     query: str = typer.Argument(..., help="Query to classify"),
-    model: str = typer.Option(None, "--model", "-m", help="Model name override"),
+    model: str = typer.Option(..., "--model", "-m", help="Model name"),
+    base_url: str = typer.Option(..., "--base-url", "-u", help="API base URL"),
+    api_key: str = typer.Option("", "--api-key", "-k", help="API key"),
+    timeout_seconds: int = typer.Option(30, "--timeout", help="Request timeout in seconds"),
+    max_tokens: int = typer.Option(4096, "--max-tokens", help="Max generation tokens"),
 ):
     """Classify a query as 'casual' or 'visionary' without running the pipeline."""
-    config = Config.from_env()
-    if model:
-        config.llm.model = model
-
-    g = Gate(config=config.pipeline.gate, llm_config=config.llm)
+    llm = LLMConfig(
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        timeout_seconds=timeout_seconds,
+        max_tokens=max_tokens,
+    )
+    g = Gate(config=Config().pipeline.gate, llm_config=llm)
     decision, reason = g.classify_with_reason(query)
 
     if decision == "casual":

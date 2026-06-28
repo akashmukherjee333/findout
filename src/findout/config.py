@@ -1,6 +1,5 @@
 """Configuration dataclasses for findout."""
 
-import os
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -9,8 +8,7 @@ from typing import Optional
 class LLMConfig:
     """LLM endpoint configuration.
 
-    Set model and base_url explicitly, or use Config.from_env().
-    Both are required — there are no built-in defaults.
+    Model and base_url should be supplied explicitly by the caller.
     """
 
     model: str = ""
@@ -42,23 +40,16 @@ class GateConfig:
 
 @dataclass
 class PipelineConfig:
-    """Pipeline variant configuration."""
+    """Single deterministic pipeline configuration."""
 
-    default_variant: str = "hybrid"  # "base" | "consistency" | "hybrid"
+    default_variant: str = "base"
 
     # Generation
     temp_generate: float = 0.0
-    temp_consistency: float = 0.7
-    temp_hybrid: float = 0.7
-
-    # Multi-sample
-    consistency_samples: int = 3
-    hybrid_samples: int = 2
 
     # Limits
     max_claims_per_answer: int = 12
     max_search_results: int = 5
-    short_circuit_on_agreement: bool = True  # hybrid mode
 
     # Gate
     gate_enabled: bool = True
@@ -72,51 +63,3 @@ class Config:
     llm: LLMConfig = field(default_factory=LLMConfig)
     search: SearchConfig = field(default_factory=SearchConfig)
     pipeline: PipelineConfig = field(default_factory=PipelineConfig)
-
-    @classmethod
-    def from_env(cls) -> "Config":
-        """Load config from environment variables.
-
-        Raises:
-            ValueError: If FINDOUT_MODEL or FINDOUT_BASE_URL are not set.
-        """
-        import os
-
-        model = os.getenv("FINDOUT_MODEL")
-        base_url = os.getenv("FINDOUT_BASE_URL")
-
-        if not model or not base_url:
-            raise ValueError(
-                "FINDOUT_MODEL and FINDOUT_BASE_URL must be set. "
-                "Example: FINDOUT_MODEL=gpt-4o FINDOUT_BASE_URL=https://api.openai.com/v1"
-            )
-
-        return cls(
-            llm=LLMConfig(
-                model=model,
-                base_url=base_url,
-                api_key=os.getenv("FINDOUT_API_KEY", ""),
-                max_tokens=int(os.getenv("FINDOUT_MAX_TOKENS", "4096")),
-                timeout_seconds=int(os.getenv("FINDOUT_TIMEOUT", "120")),
-            ),
-            search=SearchConfig(
-                provider=os.getenv("FINDOUT_SEARCH_PROVIDER", "duckduckgo"),
-                api_key=os.getenv("FINDOUT_SEARCH_API_KEY"),
-                max_results_per_query=int(
-                    os.getenv("FINDOUT_SEARCH_RESULTS", "5")
-                ),
-            ),
-            pipeline=PipelineConfig(
-                default_variant=os.getenv(
-                    "FINDOUT_PIPELINE", "hybrid"
-                ),
-                gate_enabled=os.getenv(
-                    "FINDOUT_GATE_ENABLED", "true"
-                ).lower()
-                in ("true", "1", "yes"),
-                short_circuit_on_agreement=os.getenv(
-                    "FINDOUT_SHORT_CIRCUIT", "true"
-                ).lower()
-                in ("true", "1", "yes"),
-            ),
-        )

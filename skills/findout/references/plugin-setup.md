@@ -15,26 +15,31 @@ cp -r plugins/hermes/* ~/.hermes/plugins/findout/
 
 Then `/reset` the session (or `hermes gateway restart` for gateway).
 
-## Env vars (must be set)
+## Runtime model config
 
-```
-FINDOUT_MODEL=<model>
-FINDOUT_BASE_URL=<api-base-url>
-FINDOUT_API_KEY=<key>
-FINDOUT_TIMEOUT=300
-FINDOUT_MAX_TOKENS=32768
+Inside Hermes usage, this command is expected to run against the currently
+loaded model context rather than a dedicated `FINDOUT_*` env-var bundle.
+
+For standalone CLI usage, pass endpoint settings explicitly:
+
+```bash
+findout run "your query here" \
+  --model gpt-4o \
+  --base-url https://api.openai.com/v1 \
+  --api-key sk-...
 ```
 
-These go in `~/.hermes/.env`. The plugin loads that file itself before launching
-`findout`, so a fresh Hermes session does not need the variables exported in the
-shell. The timeout/token values are important for reasoning models that spend
-tokens before producing visible answer text.
+`FINDOUT_TIMEOUT` is still accepted by the plugin as an optional timeout knob if
+present in `~/.hermes/.env`, but model/base-url/api-key are no longer documented
+as required plugin inputs.
 
 ## Verification
 
 ```bash
 # Test CLI directly
-findout run --skip-gate "your query here"
+findout run "your query here" \
+  --model gpt-4o \
+  --base-url https://api.openai.com/v1
 
 # Test plugin loads and registers both command names
 python3 -c "
@@ -59,7 +64,7 @@ print('OK', ctx.commands)
 ## Architecture
 
 ```
-TUI/gateway → /findout or /foundit <query> → Hermes plugin → ~/.hermes/.env → subprocess findout run <query> → pipeline
+TUI/gateway → /findout or /foundit <query> → Hermes plugin → subprocess findout run <query> → pipeline
 ```
 
 The plugin shells out to the `findout` CLI — keeps the plugin lightweight,

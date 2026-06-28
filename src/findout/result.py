@@ -7,11 +7,11 @@ from findout.search_client import ClaimSearchResults
 
 @dataclass
 class PipelineResult:
-    """Result from running any pipeline variant."""
+    """Result from running the deterministic verification pipeline."""
 
     query: str
     answer: str
-    pipeline_variant: str  # "base" | "consistency" | "hybrid"
+    pipeline_variant: str = "base"
 
     # Raw intermediate data (for debugging / transparency)
     raw_answer: str = ""
@@ -34,8 +34,4 @@ class PipelineResult:
     @property
     def unverified_claims(self) -> list[str]:
         """Claims that couldn't be verified."""
-        return [
-            r.claim_text
-            for r in self.search_results
-            if r.uncertain
-        ]
+        return [r.claim_text for r in self.search_results if r.uncertain]

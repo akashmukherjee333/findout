@@ -18,7 +18,7 @@ class LLMClient:
         if not model or not base_url:
             raise ValueError(
                 "model and base_url are required. "
-                "Pass them explicitly or use Config.from_env()."
+                "Pass them explicitly when constructing the client."
             )
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -145,7 +145,7 @@ class LLMClient:
         n: int = 3,
         temperature: float = 0.7,
     ) -> list[str]:
-        """Generate N responses with the same prompt (for consistency pipeline)."""
+        """Generate N responses with the same prompt."""
         payload = {
             "model": self.model,
             "messages": [

@@ -1,13 +1,12 @@
 """
 findout Hermes plugin — /findout and /foundit slash commands.
 
-Runs the findout verification pipeline (evidence-prediction, 3-angle search,
-multi-pass verification) via a single slash command in TUI, CLI, or gateway.
+Runs the deterministic findout verification pipeline via a single slash command
+in TUI, CLI, or gateway.
 
 Usage:
   /findout what is the speed of light
   /foundit what is the speed of light
-  /findout --pipeline hybrid how do black holes work
 """
 
 from __future__ import annotations
@@ -21,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 _COMMANDS = ("findout", "foundit")
 _DEFAULT_TIMEOUT_SECONDS = 300
-_HINT = "Check FINDOUT_MODEL/FINDOUT_BASE_URL/FINDOUT_API_KEY in ~/.hermes/.env."
+_HINT = (
+    "findout now expects the active Hermes model context to supply model settings. "
+    "If you run the CLI directly, pass --model and --base-url explicitly."
+)
 
 
 def _load_dotenv(path: Path, env: dict[str, str]) -> None:
@@ -71,7 +73,7 @@ def _run_findout(args: str) -> str:
             return result.stdout.strip()
         stderr = result.stderr.strip()
         logger.warning("findout CLI error (exit %d): %s", result.returncode, stderr)
-        return f"findout error: {stderr or 'unknown (check FINDOUT_* env vars)'}"
+        return f"findout error: {stderr or 'unknown'}"
     except FileNotFoundError:
         return "findout CLI not installed. Run `pip install -e .` from the findout repo or activate the right venv."
     except subprocess.TimeoutExpired:
@@ -86,9 +88,9 @@ def _handle_slash(raw_args: str) -> str:
     query = raw_args.strip()
     if not query:
         return (
-            "Usage: `/findout <query>` or `/foundit <query>` — runs the findout verification pipeline.\n\n"
+            "Usage: `/findout <query>` or `/foundit <query>` — runs the deterministic findout verification pipeline.\n\n"
             "Example: `/foundit what is the speed of light`\n"
-            "Set FINDOUT_MODEL, FINDOUT_BASE_URL, FINDOUT_API_KEY in ~/.hermes/.env"
+            "No skill matched for slash-dispatch internals, doing it raw through the plugin subprocess."
         )
 
     output = _run_findout(query)
@@ -107,6 +109,6 @@ def register(ctx) -> None:
         ctx.register_command(
             command,
             handler=_handle_slash,
-            description="Run the findout verification pipeline on a query (evidence-prediction + 3-angle search)",
+            description="Run the deterministic findout verification pipeline on a query (evidence-prediction + 3-angle search)",
             args_hint="<query>",
         )

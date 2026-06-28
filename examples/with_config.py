@@ -1,51 +1,54 @@
-"""Advanced configuration example."""
-
-from findout.config import (
-    Config, LLMConfig, SearchConfig, PipelineConfig, GateConfig
-)
-from findout.pipeline import SelfVerifyPipeline
+from findout import SelfVerifyPipeline
+from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
 
 
 def main():
     config = Config(
         llm=LLMConfig(
-            model="gpt-4o",
-            base_url="https://api.openai.com/v1",
-            api_key="sk-...",  # Set via env var in production
-            max_tokens=8192,
+            model="qwen3.5:14b",
+            base_url="http://localhost:11434/v1",
+            api_key="",
+            max_tokens=16384,
             timeout_seconds=180,
         ),
         search=SearchConfig(
             provider="duckduckgo",
-            max_results_per_query=7,
+            max_results_per_query=5,
         ),
         pipeline=PipelineConfig(
-            default_variant="consistency",
-            consistency_samples=5,  # More samples = higher confidence
-            max_claims_per_answer=20,
+            default_variant="base",
+            max_claims_per_answer=12,
             temp_generate=0.0,
-            temp_consistency=0.8,
-            gate=GateConfig(
-                enabled=True,
-                casual_threshold=0.7,
-            ),
+            gate_enabled=True,
         ),
     )
 
     pipe = SelfVerifyPipeline(config)
 
-    # Use the gate to decide
-    result = pipe.run("What is the current state of AI alignment research?")
+    queries = [
+        "Design a distributed AI task scheduler that learns which agent to assign based on outcome history.",
+        "What's the difference between PostgreSQL and MySQL?",
+        "Could a database use LLMs to generate adaptive indexes in real-time?",
+    ]
 
-    if not result.skipped_pipeline:
+    for query in queries:
+        print("=" * 80)
+        print(f"Query: {query}\n")
+
+        result = pipe.run(query)
+
+        print(result.answer)
+        print()
         print(f"Pipeline: {result.pipeline_variant}")
-        print(f"Claims analyzed: {result.total_claims}")
-        print(f"Verified: {result.verified_claims}")
-        print(f"Contradicted: {result.contradicted_claims}")
-        print(f"Uncertain: {result.uncertain_claims}")
-        print(f"Sources: {len(result.citations)}")
-
-    print(result.answer)
+        print(f"Gate decision: {result.gate_decision}")
+        print(
+            f"Claims: {result.total_claims} total, {result.verified_claims} verified, {result.contradicted_claims} contradicted, {result.uncertain_claims} uncertain"
+        )
+        if result.citations:
+            print(f"Citations: {len(result.citations)}")
+            for url in result.citations[:3]:
+                print(f"  - {url}")
+        print()
 
 
 if __name__ == "__main__":

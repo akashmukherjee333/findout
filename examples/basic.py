@@ -1,61 +1,36 @@
-"""Basic usage example for self-verify-pipelines."""
-
-from findout.config import Config
-from findout.pipeline import SelfVerifyPipeline
+from findout import SelfVerifyPipeline, Config, LLMConfig
 
 
 def main():
-    # Load config from environment (FINDOUT_MODEL + FINDOUT_BASE_URL required)
-    #   export FINDOUT_MODEL=gpt-4o
-    #   export FINDOUT_BASE_URL=https://api.openai.com/v1
-    #   export FINDOUT_API_KEY=sk-...  (optional)
-    config = Config.from_env()
+    # Supply endpoint settings explicitly.
+    config = Config(
+        llm=LLMConfig(
+            model="gpt-4o",
+            base_url="https://api.openai.com/v1",
+            api_key="",
+        )
+    )
 
-    # Create the pipeline
     pipe = SelfVerifyPipeline(config)
 
-    # --- Example 1: Casual question (gate skips pipeline) ---
-    result = pipe.run("What are squirrels known for?")
+    result = pipe.run("What is PostgreSQL and why do people like it?")
+    print(result.answer)
+    print(f"\n[Pipeline: {result.pipeline_variant}]")
+    print(f"[Verified: {result.verified_claims}/{result.total_claims} claims]")
+
+    result = pipe.run("How does MVCC work in PostgreSQL?")
+    print("\n" + "=" * 80 + "\n")
+    print(result.answer)
+    print(f"\n[Pipeline: {result.pipeline_variant}]")
+    print(f"[Citations: {len(result.citations)}]")
+
+    result = pipe.run(
+        "What if databases could negotiate consistency levels in natural language?"
+    )
+    print("\n" + "=" * 80 + "\n")
+    print(result.answer)
+    print(f"\n[Pipeline: {result.pipeline_variant}]")
     print(f"[Gate: {result.gate_decision}]")
-    if result.skipped_pipeline:
-        print("(No verification needed — casual question)")
-    print(result.answer)
-    print()
-
-    # --- Example 2: Visionary question (runs base pipeline) ---
-    result = pipe.run(
-        "I'm thinking about a system where the frontend is entirely "
-        "AI-generated at runtime based on what the user types into a search bar.",
-        pipeline="base",
-        skip_gate=True,  # Force pipeline for demo
-    )
-    print(f"[Pipeline: {result.pipeline_variant}]")
-    print(f"Claims: {result.total_claims} total, "
-          f"{result.verified_claims} verified, "
-          f"{result.uncertain_claims} uncertain")
-    print(result.answer)
-    print()
-
-    # --- Example 3: Consistency pipeline for high-stakes ---
-    result = pipe.run(
-        "Explain how PostgreSQL's MVCC implementation differs from MySQL's.",
-        pipeline="consistency",
-        skip_gate=True,
-    )
-    print(f"[Pipeline: {result.pipeline_variant}]")
-    print(f"Claims: {result.total_claims}")
-    print(result.answer)
-    print()
-
-    # --- Example 4: Hybrid mode for small local models ---
-    result = pipe.run(
-        "Design a distributed task scheduler with AI-driven prioritization.",
-        pipeline="hybrid",
-        skip_gate=True,
-    )
-    print(f"[Pipeline: {result.pipeline_variant}]")
-    print(f"Claims: {result.total_claims}")
-    print(result.answer)
 
 
 if __name__ == "__main__":

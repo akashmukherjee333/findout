@@ -1,31 +1,18 @@
 """Tests for self-verify-pipelines."""
 
-from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
+from findout.config import Config, LLMConfig
 from findout.search_client import SearchResult, ClaimSearchResults, SearchClient
-from findout.stages.extract import extract_claims
-from findout.stages.predict import predict, ClaimPredictions
 from findout.gate import Gate
 
 
 class TestConfig:
     def test_default_config(self):
         c = Config()
-        assert c.llm.model == "", "default model should be empty — must be set explicitly"
-        assert c.pipeline.default_variant == "hybrid"
+        assert c.llm.model == "", "default model should be empty — caller must provide it"
+        assert c.pipeline.default_variant == "base"
 
-    def test_from_env_requires_vars(self, monkeypatch):
-        import pytest
-        # Unset env vars so the test works regardless of the running environment
-        monkeypatch.delenv("FINDOUT_MODEL", raising=False)
-        monkeypatch.delenv("FINDOUT_BASE_URL", raising=False)
-        monkeypatch.delenv("FINDOUT_API_KEY", raising=False)
-        with pytest.raises(ValueError, match="FINDOUT_MODEL and FINDOUT_BASE_URL"):
-            Config.from_env()
-
-    def test_from_env_with_vars(self, monkeypatch):
-        monkeypatch.setenv("FINDOUT_MODEL", "test-model")
-        monkeypatch.setenv("FINDOUT_BASE_URL", "http://test:8000/v1")
-        c = Config.from_env()
+    def test_explicit_config(self):
+        c = Config(llm=LLMConfig(model="test-model", base_url="http://test:8000/v1"))
         assert c.llm.model == "test-model"
         assert c.llm.base_url == "http://test:8000/v1"
 
@@ -79,25 +66,6 @@ class TestGate:
         g = Gate(config=gc, llm_config=llm)
         decision, reason = g.classify_with_reason("anything")
         assert decision == "visionary"
-
-
-class TestExtract:
-    def test_extract_simple(self):
-        """Test that extraction parses bullet points correctly."""
-        answer = """PostgreSQL was created in 1996.
-        It supports MVCC for concurrency.
-        Some people prefer it over MySQL."""
-        # We need a real LLM client for this — in tests, we mock.
-        # This test verifies the import works and the function exists
-        from findout.stages.extract import extract_claims
-        assert callable(extract_claims)
-
-
-class TestPredict:
-    def test_parse_empty(self):
-        from findout.stages.predict import _parse_predictions
-        result = _parse_predictions("", [])
-        assert result == []
 
 
 class TestPipeline:
