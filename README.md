@@ -64,14 +64,19 @@ Generates N=2 answers. If they agree — short-circuit, no search. If they disag
 ```bash
 pip install findout
 
-# Minimal — uses OpenAI-compatible endpoint from env vars
+# Set your LLM endpoint (any OpenAI-compatible provider)
+export FINDOUT_MODEL=gpt-4o
+export FINDOUT_BASE_URL=https://api.openai.com/v1
+export FINDOUT_API_KEY=sk-...
+
+# Run the pipeline
 findout run "What would an OS look like if the frontend was entirely AI-generated?"
 
-# Specify model and endpoint
+# Alternatively, pass params directly (works with any provider):
 findout run "Explain PostgreSQL MVCC" \
-  --model qwen3.5:14b \
-  --base-url http://localhost:11434/v1 \
-  --api-key ollama \
+  --model gpt-4o \
+  --base-url https://api.openai.com/v1 \
+  --api-key sk-... \
   --pipeline hybrid
 
 # Gate-only mode (just classify, don't execute)
@@ -85,10 +90,11 @@ findout gate "I want a system where AI generates the frontend at runtime"
 
 ```python
 from findout import SelfVerifyPipeline
+import os
 
 pipeline = SelfVerifyPipeline(
-    model="qwen3.5:14b",
-    base_url="http://localhost:11434/v1",
+    model=os.environ["FINDOUT_MODEL"],
+    base_url=os.environ["FINDOUT_BASE_URL"],
 )
 
 result = pipeline.run(
@@ -144,9 +150,12 @@ The skill is an **active agent workflow**, not passive documentation. When a use
 Set environment variables to configure:
 
 ```bash
-export FINDOUT_MODEL="qwen3.5:14b"
-export FINDOUT_BASE_URL="http://localhost:11434/v1"
-export FINDOUT_API_KEY="ollama"
+# Required — must point to any OpenAI-compatible endpoint
+export FINDOUT_MODEL="gpt-4o"
+export FINDOUT_BASE_URL="https://api.openai.com/v1"
+export FINDOUT_API_KEY="sk-..."
+
+# Optional
 export FINDOUT_SEARCH_PROVIDER="duckduckgo"
 export FINDOUT_PIPELINE="hybrid"
 export FINDOUT_GATE_ENABLED="true"
@@ -156,10 +165,12 @@ Or configure in `~/.hermes/config.yaml`:
 
 ```yaml
 env:
-  FINDOUT_MODEL: qwen3.5:14b
-  FINDOUT_BASE_URL: http://localhost:11434/v1
+  FINDOUT_MODEL: gpt-4o
+  FINDOUT_BASE_URL: https://api.openai.com/v1
   FINDOUT_PIPELINE: hybrid
 ```
+
+Works with any OpenAI-compatible provider — OpenAI, vLLM, Ollama, Groq, Together, Anthropic (via proxy), etc.
 
 ---
 
@@ -246,14 +257,23 @@ If nothing returns → **speculative** (marked as unverified).
 
 ## Configuration
 
+All configuration comes from environment variables — no hardcoded defaults.
+`FINDOUT_MODEL` and `FINDOUT_BASE_URL` are **required**.
+
 ```python
+from findout.config import Config
+
+# Load from environment (raises ValueError if FINDOUT_MODEL/BASE_URL unset)
+config = Config.from_env()
+
+# Or construct explicitly:
 from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
 
 config = Config(
     llm=LLMConfig(
-        model="qwen3.5:14b",
-        base_url="http://localhost:11434/v1",
-        api_key="ollama",
+        model="gpt-4o",
+        base_url="https://api.openai.com/v1",
+        api_key="sk-...",
     ),
     search=SearchConfig(
         provider="duckduckgo",  # or "serpapi", "custom"
@@ -272,18 +292,18 @@ config = Config(
 
 ### Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `FINDOUT_MODEL` | `qwen3.5:14b` | Model name |
-| `FINDOUT_BASE_URL` | `http://localhost:11434/v1` | API endpoint |
-| `FINDOUT_API_KEY` | `ollama` | API key |
-| `FINDOUT_MAX_TOKENS` | `4096` | Max generation tokens |
-| `FINDOUT_TIMEOUT` | `120` | Request timeout (s) |
-| `FINDOUT_SEARCH_PROVIDER` | `duckduckgo` | Search backend |
-| `FINDOUT_SEARCH_RESULTS` | `5` | Results per query |
-| `FINDOUT_PIPELINE` | `hybrid` | Default pipeline variant |
-| `FINDOUT_GATE_ENABLED` | `true` | Enable gate classifier |
-| `FINDOUT_SHORT_CIRCUIT` | `true` | Skip search on full agreement |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `FINDOUT_MODEL` | **Yes** | — | Model name (e.g. `gpt-4o`, `claude-sonnet-4`) |
+| `FINDOUT_BASE_URL` | **Yes** | — | API endpoint (e.g. `https://api.openai.com/v1`) |
+| `FINDOUT_API_KEY` | No | `""` | API key |
+| `FINDOUT_MAX_TOKENS` | No | `4096` | Max generation tokens |
+| `FINDOUT_TIMEOUT` | No | `120` | Request timeout (s) |
+| `FINDOUT_SEARCH_PROVIDER` | No | `duckduckgo` | Search backend |
+| `FINDOUT_SEARCH_RESULTS` | No | `5` | Results per query |
+| `FINDOUT_PIPELINE` | No | `hybrid` | Default pipeline variant |
+| `FINDOUT_GATE_ENABLED` | No | `true` | Enable gate classifier |
+| `FINDOUT_SHORT_CIRCUIT` | No | `true` | Skip search on full agreement |
 
 ---
 
