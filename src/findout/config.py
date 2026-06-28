@@ -1,16 +1,21 @@
 """Configuration dataclasses for findout."""
 
+import os
 from dataclasses import dataclass, field
 from typing import Optional
 
 
 @dataclass
 class LLMConfig:
-    """LLM endpoint configuration."""
+    """LLM endpoint configuration.
 
-    model: str = "qwen3.5:14b"
-    base_url: str = "http://localhost:11434/v1"
-    api_key: str = "ollama"
+    Set model and base_url explicitly, or use Config.from_env().
+    Both are required — there are no built-in defaults.
+    """
+
+    model: str = ""
+    base_url: str = ""
+    api_key: str = ""
     max_tokens: int = 4096
     timeout_seconds: int = 120
 
@@ -70,16 +75,27 @@ class Config:
 
     @classmethod
     def from_env(cls) -> "Config":
-        """Load config from environment variables."""
+        """Load config from environment variables.
+
+        Raises:
+            ValueError: If FINDOUT_MODEL or FINDOUT_BASE_URL are not set.
+        """
         import os
+
+        model = os.getenv("FINDOUT_MODEL")
+        base_url = os.getenv("FINDOUT_BASE_URL")
+
+        if not model or not base_url:
+            raise ValueError(
+                "FINDOUT_MODEL and FINDOUT_BASE_URL must be set. "
+                "Example: FINDOUT_MODEL=gpt-4o FINDOUT_BASE_URL=https://api.openai.com/v1"
+            )
 
         return cls(
             llm=LLMConfig(
-                model=os.getenv("FINDOUT_MODEL", "qwen3.5:14b"),
-                base_url=os.getenv(
-                    "FINDOUT_BASE_URL", "http://localhost:11434/v1"
-                ),
-                api_key=os.getenv("FINDOUT_API_KEY", "ollama"),
+                model=model,
+                base_url=base_url,
+                api_key=os.getenv("FINDOUT_API_KEY", ""),
                 max_tokens=int(os.getenv("FINDOUT_MAX_TOKENS", "4096")),
                 timeout_seconds=int(os.getenv("FINDOUT_TIMEOUT", "120")),
             ),

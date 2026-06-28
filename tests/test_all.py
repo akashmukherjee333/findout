@@ -10,13 +10,20 @@ from findout.gate import Gate
 class TestConfig:
     def test_default_config(self):
         c = Config()
-        assert c.llm.model == "qwen3.5:14b"
+        assert c.llm.model == "", "default model should be empty — must be set explicitly"
         assert c.pipeline.default_variant == "hybrid"
 
-    def test_from_env(self, monkeypatch):
+    def test_from_env_requires_vars(self, monkeypatch):
+        import pytest
+        with pytest.raises(ValueError, match="FINDOUT_MODEL and FINDOUT_BASE_URL"):
+            Config.from_env()
+
+    def test_from_env_with_vars(self, monkeypatch):
         monkeypatch.setenv("FINDOUT_MODEL", "test-model")
+        monkeypatch.setenv("FINDOUT_BASE_URL", "http://test:8000/v1")
         c = Config.from_env()
         assert c.llm.model == "test-model"
+        assert c.llm.base_url == "http://test:8000/v1"
 
 
 class TestSearchClient:

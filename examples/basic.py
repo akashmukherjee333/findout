@@ -5,12 +5,11 @@ from findout.pipeline import SelfVerifyPipeline
 
 
 def main():
-    # Load config from environment (or use defaults)
+    # Load config from environment (FINDOUT_MODEL + FINDOUT_BASE_URL required)
+    #   export FINDOUT_MODEL=gpt-4o
+    #   export FINDOUT_BASE_URL=https://api.openai.com/v1
+    #   export FINDOUT_API_KEY=sk-...  (optional)
     config = Config.from_env()
-
-    # Override if needed
-    config.llm.model = "qwen3.5:14b"
-    config.llm.base_url = "http://localhost:11434/v1"
 
     # Create the pipeline
     pipe = SelfVerifyPipeline(config)

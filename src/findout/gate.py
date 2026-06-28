@@ -34,14 +34,16 @@ class Gate:
         llm_config: LLMConfig,
     ):
         self.enabled = config.enabled
-        model = config.model or llm_config.model
-        self.client = LLMClient(
-            model=model,
-            base_url=llm_config.base_url,
-            api_key=llm_config.api_key,
-            max_tokens=10,  # We only need one word back
-            timeout=30,
-        )
+        self.client = None
+        if self.enabled:
+            model = config.model or llm_config.model
+            self.client = LLMClient(
+                model=model,
+                base_url=llm_config.base_url,
+                api_key=llm_config.api_key,
+                max_tokens=10,  # We only need one word back
+                timeout=30,
+            )
 
     def classify(self, query: str) -> str:
         """Returns 'casual' or 'visionary'."""
@@ -50,6 +52,7 @@ class Gate:
 
         # Strip whitespace, truncate for speed
         cleaned = query.strip()[:500]
+        assert self.client is not None  # guaranteed by enabled check above
         response = self.client.generate(
             system=_SYSTEM,
             prompt=cleaned,
@@ -69,6 +72,7 @@ class Gate:
 
         cleaned = query.strip()[:500]
         # Use a slightly expanded prompt to get reasoning
+        assert self.client is not None  # guaranteed by enabled check above
         resp = self.client.generate(
             system=_SYSTEM
             + "\nIf you need to explain, append ' — REASON: <short reason>' after your answer.",

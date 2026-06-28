@@ -10,11 +10,16 @@ class LLMClient:
     def __init__(
         self,
         model: str,
-        base_url: str = "http://localhost:11434/v1",
-        api_key: str = "ollama",
+        base_url: str = "",
+        api_key: str = "",
         max_tokens: int = 4096,
         timeout: int = 120,
     ):
+        if not model or not base_url:
+            raise ValueError(
+                "model and base_url are required. "
+                "Pass them explicitly or use Config.from_env()."
+            )
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
