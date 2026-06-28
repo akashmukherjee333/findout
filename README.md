@@ -1,11 +1,11 @@
-# self-verify-pipelines
+# findout
 
 **Deterministic, single-model verification pipelines for LLM outputs.**
 Three-tier architecture: base → multi-sample consistency → hybrid for small models.
 
 No multi-model fan-out. No training. No fine-tuning. One model, multiple deterministic passes, grounded in real web search.
 
-[![GitHub](https://img.shields.io/badge/GitHub-self--verify--pipelines-181717?logo=github)](https://github.com/NousResearch/self-verify-pipelines)
+[![GitHub](https://img.shields.io/badge/GitHub-findout-181717?logo=github)](https://github.com/akashmukherjee333/findout)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
 
@@ -62,29 +62,29 @@ Generates N=2 answers. If they agree — short-circuit, no search. If they disag
 ## Quick Start
 
 ```bash
-pip install self-verify-pipelines
+pip install findout
 
 # Minimal — uses OpenAI-compatible endpoint from env vars
-self-verify run "What would an OS look like if the frontend was entirely AI-generated?"
+findout run "What would an OS look like if the frontend was entirely AI-generated?"
 
 # Specify model and endpoint
-self-verify run "Explain PostgreSQL MVCC" \
+findout run "Explain PostgreSQL MVCC" \
   --model qwen3.5:14b \
   --base-url http://localhost:11434/v1 \
   --api-key ollama \
   --pipeline hybrid
 
 # Gate-only mode (just classify, don't execute)
-self-verify gate "squirrels are known for storing nuts"
+findout gate "squirrels are known for storing nuts"
 # → casual
-self-verify gate "I want a system where AI generates the frontend at runtime"
+findout gate "I want a system where AI generates the frontend at runtime"
 # → visionary
 ```
 
 ### Python API
 
 ```python
-from self_verify import SelfVerifyPipeline
+from findout import SelfVerifyPipeline
 
 pipeline = SelfVerifyPipeline(
     model="qwen3.5:14b",
@@ -111,25 +111,25 @@ This project was built for [Hermes Agent](https://github.com/NousResearch/hermes
 
 ```bash
 # Clone the repo
-git clone https://github.com/NousResearch/self-verify-pipelines.git ~/projects/self-verify-pipelines
+git clone https://github.com/akashmukherjee333/findout.git ~/projects/findout
 
 # Install the Python package
-cd ~/projects/self-verify-pipelines
+cd ~/projects/findout
 pip install -e .
 
 # Install the Hermes skill
-cp -r skills/self-verify-pipelines ~/.hermes/skills/research/
+cp -r skills/findout ~/.hermes/skills/research/
 
 # Or symlink for auto-updates:
-ln -s ~/projects/self-verify-pipelines/skills/self-verify-pipelines ~/.hermes/skills/research/self-verify-pipelines
+ln -s ~/projects/findout/skills/findout ~/.hermes/skills/research/findout
 ```
 
 ### One-liner install
 
 ```bash
-pip install self-verify-pipelines && \
-ln -s "$(python3 -c 'import self_verify; import os; print(os.path.dirname(self_verify.__file__))')/../skills/self-verify-pipelines" \
-  ~/.hermes/skills/research/self-verify-pipelines
+pip install findout && \
+ln -s "$(python3 -c 'import findout; import os; print(os.path.dirname(findout.__file__))')/../skills/findout" \
+  ~/.hermes/skills/research/findout
 ```
 
 ### How it works in Hermes
@@ -144,21 +144,21 @@ The skill is an **active agent workflow**, not passive documentation. When a use
 Set environment variables to configure:
 
 ```bash
-export SELF_VERIFY_MODEL="qwen3.5:14b"
-export SELF_VERIFY_BASE_URL="http://localhost:11434/v1"
-export SELF_VERIFY_API_KEY="ollama"
-export SELF_VERIFY_SEARCH_PROVIDER="duckduckgo"
-export SELF_VERIFY_PIPELINE="hybrid"
-export SELF_VERIFY_GATE_ENABLED="true"
+export FINDOUT_MODEL="qwen3.5:14b"
+export FINDOUT_BASE_URL="http://localhost:11434/v1"
+export FINDOUT_API_KEY="ollama"
+export FINDOUT_SEARCH_PROVIDER="duckduckgo"
+export FINDOUT_PIPELINE="hybrid"
+export FINDOUT_GATE_ENABLED="true"
 ```
 
 Or configure in `~/.hermes/config.yaml`:
 
 ```yaml
 env:
-  SELF_VERIFY_MODEL: qwen3.5:14b
-  SELF_VERIFY_BASE_URL: http://localhost:11434/v1
-  SELF_VERIFY_PIPELINE: hybrid
+  FINDOUT_MODEL: qwen3.5:14b
+  FINDOUT_BASE_URL: http://localhost:11434/v1
+  FINDOUT_PIPELINE: hybrid
 ```
 
 ---
@@ -247,7 +247,7 @@ If nothing returns → **speculative** (marked as unverified).
 ## Configuration
 
 ```python
-from self_verify.config import Config, LLMConfig, SearchConfig, PipelineConfig
+from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
 
 config = Config(
     llm=LLMConfig(
@@ -274,24 +274,24 @@ config = Config(
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SELF_VERIFY_MODEL` | `qwen3.5:14b` | Model name |
-| `SELF_VERIFY_BASE_URL` | `http://localhost:11434/v1` | API endpoint |
-| `SELF_VERIFY_API_KEY` | `ollama` | API key |
-| `SELF_VERIFY_MAX_TOKENS` | `4096` | Max generation tokens |
-| `SELF_VERIFY_TIMEOUT` | `120` | Request timeout (s) |
-| `SELF_VERIFY_SEARCH_PROVIDER` | `duckduckgo` | Search backend |
-| `SELF_VERIFY_SEARCH_RESULTS` | `5` | Results per query |
-| `SELF_VERIFY_PIPELINE` | `hybrid` | Default pipeline variant |
-| `SELF_VERIFY_GATE_ENABLED` | `true` | Enable gate classifier |
-| `SELF_VERIFY_SHORT_CIRCUIT` | `true` | Skip search on full agreement |
+| `FINDOUT_MODEL` | `qwen3.5:14b` | Model name |
+| `FINDOUT_BASE_URL` | `http://localhost:11434/v1` | API endpoint |
+| `FINDOUT_API_KEY` | `ollama` | API key |
+| `FINDOUT_MAX_TOKENS` | `4096` | Max generation tokens |
+| `FINDOUT_TIMEOUT` | `120` | Request timeout (s) |
+| `FINDOUT_SEARCH_PROVIDER` | `duckduckgo` | Search backend |
+| `FINDOUT_SEARCH_RESULTS` | `5` | Results per query |
+| `FINDOUT_PIPELINE` | `hybrid` | Default pipeline variant |
+| `FINDOUT_GATE_ENABLED` | `true` | Enable gate classifier |
+| `FINDOUT_SHORT_CIRCUIT` | `true` | Skip search on full agreement |
 
 ---
 
 ## Development
 
 ```bash
-git clone https://github.com/NousResearch/self-verify-pipelines.git
-cd self-verify-pipelines
+git clone https://github.com/akashmukherjee333/findout.git
+cd findout
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -306,15 +306,15 @@ ruff check src/
 ### Project structure
 
 ```
-self-verify-pipelines/
+findout/
 ├── pyproject.toml          # Build config + deps
 ├── LICENSE                 # MIT
 ├── README.md               # This file
 ├── .gitignore
 ├── skills/                 # Hermes skill bundle
-│   └── self-verify-pipelines/
+│   └── findout/
 │       └── SKILL.md
-├── src/self_verify/
+├── src/findout/
 │   ├── __init__.py
 │   ├── config.py           # Dataclasses (LLM, Search, Pipeline)
 │   ├── gate.py             # 50-token casual vs visionary classifier

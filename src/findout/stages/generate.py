@@ -1,6 +1,6 @@
 """Stage 1: Generate raw answer (cold)."""
 
-from self_verify.llm import LLMClient
+from findout.llm import LLMClient
 
 _SYSTEM = """You are a helpful AI assistant. Answer the user's question directly and thoroughly.
 Do NOT add disclaimers like "as an AI" or "I don't have real-time access to the web."

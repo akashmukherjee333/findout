@@ -1,9 +1,9 @@
 """Advanced configuration example."""
 
-from self_verify.config import (
+from findout.config import (
     Config, LLMConfig, SearchConfig, PipelineConfig, GateConfig
 )
-from self_verify.pipeline import SelfVerifyPipeline
+from findout.pipeline import SelfVerifyPipeline
 
 
 def main():

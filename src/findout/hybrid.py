@@ -12,13 +12,13 @@ evidence than any single run's "confidence."
 """
 
 import logging
-from self_verify.result import PipelineResult
-from self_verify.stages.generate import generate_answer
-from self_verify.stages.extract import extract_claims
-from self_verify.stages.predict import predict
-from self_verify.stages.search import search_claim_set
-from self_verify.stages.rewrite import rewrite
-from self_verify.consistency import _find_consensus, _find_disputed, _normalize
+from findout.result import PipelineResult
+from findout.stages.generate import generate_answer
+from findout.stages.extract import extract_claims
+from findout.stages.predict import predict
+from findout.stages.search import search_claim_set
+from findout.stages.rewrite import rewrite
+from findout.consistency import _find_consensus, _find_disputed, _normalize
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,10 @@
 """Tests for self-verify-pipelines."""
 
-from self_verify.config import Config, LLMConfig, SearchConfig, PipelineConfig
-from self_verify.search_client import SearchResult, ClaimSearchResults, SearchClient
-from self_verify.stages.extract import extract_claims
-from self_verify.stages.predict import predict, ClaimPredictions
-from self_verify.gate import Gate
+from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
+from findout.search_client import SearchResult, ClaimSearchResults, SearchClient
+from findout.stages.extract import extract_claims
+from findout.stages.predict import predict, ClaimPredictions
+from findout.gate import Gate
 
 
 class TestConfig:
@@ -14,7 +14,7 @@ class TestConfig:
         assert c.pipeline.default_variant == "hybrid"
 
     def test_from_env(self, monkeypatch):
-        monkeypatch.setenv("SELF_VERIFY_MODEL", "test-model")
+        monkeypatch.setenv("FINDOUT_MODEL", "test-model")
         c = Config.from_env()
         assert c.llm.model == "test-model"
 
@@ -55,14 +55,14 @@ class TestSearchClient:
 
 class TestGate:
     def test_gate_disabled(self):
-        from self_verify.config import GateConfig
+        from findout.config import GateConfig
         gc = GateConfig(enabled=False)
         llm = LLMConfig()
         g = Gate(config=gc, llm_config=llm)
         assert g.classify("anything") == "visionary"
 
     def test_gate_classify_with_reason_disabled(self):
-        from self_verify.config import GateConfig
+        from findout.config import GateConfig
         gc = GateConfig(enabled=False)
         llm = LLMConfig()
         g = Gate(config=gc, llm_config=llm)
@@ -78,20 +78,20 @@ class TestExtract:
         Some people prefer it over MySQL."""
         # We need a real LLM client for this — in tests, we mock.
         # This test verifies the import works and the function exists
-        from self_verify.stages.extract import extract_claims
+        from findout.stages.extract import extract_claims
         assert callable(extract_claims)
 
 
 class TestPredict:
     def test_parse_empty(self):
-        from self_verify.stages.predict import _parse_predictions
+        from findout.stages.predict import _parse_predictions
         result = _parse_predictions("", [])
         assert result == []
 
 
 class TestPipeline:
     def test_pipeline_result_counts(self):
-        from self_verify.result import PipelineResult
+        from findout.result import PipelineResult
         r = PipelineResult(
             query="test",
             answer="test answer",

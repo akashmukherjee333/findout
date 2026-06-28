@@ -6,7 +6,7 @@ would look like if the claim were true.
 """
 
 from dataclasses import dataclass, field
-from self_verify.llm import LLMClient
+from findout.llm import LLMClient
 
 _SYSTEM = """You are an evidence prediction engine. Given a factual claim, your job is to predict:
 

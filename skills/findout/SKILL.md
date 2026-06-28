@@ -1,13 +1,13 @@
 ---
-name: self-verify-pipelines
+name: findout
 description: >
   ACTIVE AGENT WORKFLOW for three deterministic single-model verification pipelines.
   Uses evidence-prediction (not confidence tags) + 3-angle web search.
   Base (3.5x), consistency (8-9x), hybrid (4-5x, for small models).
-trigger: self-verify, verify answer, fact check, evidence prediction, claim verification, research pipeline, pipeline run
+trigger: findout, self-verify, verify answer, fact check, evidence prediction, claim verification, research pipeline, pipeline run
 ---
 
-# self-verify-pipelines — ACTIVE WORKFLOW
+# findout — ACTIVE WORKFLOW
 
 **THIS IS NOT DOCUMENTATION. THIS IS A WORKFLOW TO EXECUTE.**
 
@@ -18,16 +18,16 @@ When the user asks a research/factual question, you MUST run this pipeline using
 Call the gate classifier BEFORE deciding whether to pipeline:
 
 ```python
-from self_verify.gate import Gate
-from self_verify.config import GateConfig, LLMConfig
+from findout.gate import Gate
+from findout.config import GateConfig, LLMConfig
 import os
 
 gate = Gate(
     GateConfig(),
     LLMConfig(
-        model=os.getenv("SELF_VERIFY_MODEL", "qwen3.5:14b"),
-        base_url=os.getenv("SELF_VERIFY_BASE_URL", "http://localhost:11434/v1"),
-        api_key=os.getenv("SELF_VERIFY_API_KEY", "ollama"),
+        model=os.getenv("FINDOUT_MODEL", "qwen3.5:14b"),
+        base_url=os.getenv("FINDOUT_BASE_URL", "http://localhost:11434/v1"),
+        api_key=os.getenv("FINDOUT_API_KEY", "ollama"),
     ),
 )
 category, reason = gate.classify_with_reason(query)
@@ -50,15 +50,15 @@ Determine model size from context. If unsure, default to `hybrid`.
 ## STEP 2: Run the pipeline via execute_code
 
 ```python
-from self_verify.config import Config, LLMConfig, SearchConfig, PipelineConfig
-from self_verify.pipeline import SelfVerifyPipeline
+from findout.config import Config, LLMConfig, SearchConfig, PipelineConfig
+from findout.pipeline import SelfVerifyPipeline
 import os
 
 config = Config(
     llm=LLMConfig(
-        model=os.getenv("SELF_VERIFY_MODEL", "qwen3.5:14b"),
-        base_url=os.getenv("SELF_VERIFY_BASE_URL", "http://localhost:11434/v1"),
-        api_key=os.getenv("SELF_VERIFY_API_KEY", "ollama"),
+        model=os.getenv("FINDOUT_MODEL", "qwen3.5:14b"),
+        base_url=os.getenv("FINDOUT_BASE_URL", "http://localhost:11434/v1"),
+        api_key=os.getenv("FINDOUT_API_KEY", "ollama"),
         max_tokens=4096,
         timeout_seconds=120,
     ),
@@ -143,10 +143,10 @@ except Exception as e:
 Set via env vars:
 
 ```bash
-SELF_VERIFY_MODEL=qwen3.5:14b
-SELF_VERIFY_BASE_URL=http://localhost:11434/v1
-SELF_VERIFY_API_KEY=ollama
-SELF_VERIFY_SEARCH_PROVIDER=duckduckgo
-SELF_VERIFY_PIPELINE=hybrid
-SELF_VERIFY_GATE_ENABLED=true
+FINDOUT_MODEL=qwen3.5:14b
+FINDOUT_BASE_URL=http://localhost:11434/v1
+FINDOUT_API_KEY=ollama
+FINDOUT_SEARCH_PROVIDER=duckduckgo
+FINDOUT_PIPELINE=hybrid
+FINDOUT_GATE_ENABLED=true
 ```

@@ -1,7 +1,7 @@
 """Basic usage example for self-verify-pipelines."""
 
-from self_verify.config import Config
-from self_verify.pipeline import SelfVerifyPipeline
+from findout.config import Config
+from findout.pipeline import SelfVerifyPipeline
 
 
 def main():

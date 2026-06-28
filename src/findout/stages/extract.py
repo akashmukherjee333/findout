@@ -4,7 +4,7 @@ Each claim should be a single factual assertion that can be independently verifi
 """
 
 import re
-from self_verify.llm import LLMClient
+from findout.llm import LLMClient
 
 _SYSTEM = """Extract atomic factual claims from the given text.
 

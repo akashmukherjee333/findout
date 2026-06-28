@@ -1,12 +1,12 @@
 [project]
-name = "self-verify-pipelines"
+name = "findout"
 version = "0.2.0"
 description = "Deterministic, single-model, multi-pass verification pipelines for LLM outputs"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
-    { name = "self-verify-pipelines contributors", email = "oss@nousresearch.com" },
+    { name = "findout contributors", email = "oss@nousresearch.com" },
 ]
 
 classifiers = [
@@ -44,13 +44,13 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/NousResearch/self-verify-pipelines"
-Repository = "https://github.com/NousResearch/self-verify-pipelines"
-Documentation = "https://github.com/NousResearch/self-verify-pipelines#readme"
-Issues = "https://github.com/NousResearch/self-verify-pipelines/issues"
+Homepage = "https://github.com/akashmukherjee333/findout"
+Repository = "https://github.com/akashmukherjee333/findout"
+Documentation = "https://github.com/akashmukherjee333/findout#readme"
+Issues = "https://github.com/akashmukherjee333/findout/issues"
 
 [project.scripts]
-self-verify = "self_verify.cli:app"
+findout = "findout.cli:app"
 
 [build-system]
 requires = ["setuptools>=68.0"]
@@ -68,4 +68,4 @@ line-length = 100
 target-version = "py310"
 
 [tool.coverage.run]
-source = ["self_verify"]
+source = ["findout"]

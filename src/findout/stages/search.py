@@ -9,8 +9,8 @@ Results are bundled per-claim for the rewrite stage to use.
 """
 
 from dataclasses import dataclass, field
-from self_verify.search_client import SearchClient, SearchResult, ClaimSearchResults
-from self_verify.stages.predict import ClaimPredictions
+from findout.search_client import SearchClient, SearchResult, ClaimSearchResults
+from findout.stages.predict import ClaimPredictions
 
 
 def search_claim_set(

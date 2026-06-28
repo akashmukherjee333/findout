@@ -5,16 +5,16 @@ No multi-model fan-out. No training. Just structured prompting + web search.
 """
 
 import logging
-from self_verify.llm import LLMClient
-from self_verify.search_client import SearchClient, ClaimSearchResults
-from self_verify.gate import Gate
-from self_verify.config import Config
-from self_verify.result import PipelineResult
-from self_verify.stages.generate import generate_answer
-from self_verify.stages.extract import extract_claims
-from self_verify.stages.predict import predict
-from self_verify.stages.search import search_claim_set
-from self_verify.stages.rewrite import rewrite
+from findout.llm import LLMClient
+from findout.search_client import SearchClient, ClaimSearchResults
+from findout.gate import Gate
+from findout.config import Config
+from findout.result import PipelineResult
+from findout.stages.generate import generate_answer
+from findout.stages.extract import extract_claims
+from findout.stages.predict import predict
+from findout.stages.search import search_claim_set
+from findout.stages.rewrite import rewrite
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class SelfVerifyPipeline:
         The key advantage: a hallucination rarely appears in ALL N samples.
         Claims with high consensus pass through, conflicts get searched.
         """
-        from self_verify.consistency import run_consistency_pipeline
+        from findout.consistency import run_consistency_pipeline
         return run_consistency_pipeline(self, query)
 
     def _run_hybrid(self, query: str) -> PipelineResult:
@@ -148,7 +148,7 @@ class SelfVerifyPipeline:
 
         Designed for small local models (3B-14B) where instruction-following is shaky.
         """
-        from self_verify.hybrid import run_hybrid_pipeline
+        from findout.hybrid import run_hybrid_pipeline
         return run_hybrid_pipeline(self, query)
 
     def _collect_citations(self, results: list[ClaimSearchResults]) -> list[str]:

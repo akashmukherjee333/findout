@@ -1,4 +1,4 @@
-"""Configuration dataclasses for self-verify-pipelines."""
+"""Configuration dataclasses for findout."""
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -75,31 +75,31 @@ class Config:
 
         return cls(
             llm=LLMConfig(
-                model=os.getenv("SELF_VERIFY_MODEL", "qwen3.5:14b"),
+                model=os.getenv("FINDOUT_MODEL", "qwen3.5:14b"),
                 base_url=os.getenv(
-                    "SELF_VERIFY_BASE_URL", "http://localhost:11434/v1"
+                    "FINDOUT_BASE_URL", "http://localhost:11434/v1"
                 ),
-                api_key=os.getenv("SELF_VERIFY_API_KEY", "ollama"),
-                max_tokens=int(os.getenv("SELF_VERIFY_MAX_TOKENS", "4096")),
-                timeout_seconds=int(os.getenv("SELF_VERIFY_TIMEOUT", "120")),
+                api_key=os.getenv("FINDOUT_API_KEY", "ollama"),
+                max_tokens=int(os.getenv("FINDOUT_MAX_TOKENS", "4096")),
+                timeout_seconds=int(os.getenv("FINDOUT_TIMEOUT", "120")),
             ),
             search=SearchConfig(
-                provider=os.getenv("SELF_VERIFY_SEARCH_PROVIDER", "duckduckgo"),
-                api_key=os.getenv("SELF_VERIFY_SEARCH_API_KEY"),
+                provider=os.getenv("FINDOUT_SEARCH_PROVIDER", "duckduckgo"),
+                api_key=os.getenv("FINDOUT_SEARCH_API_KEY"),
                 max_results_per_query=int(
-                    os.getenv("SELF_VERIFY_SEARCH_RESULTS", "5")
+                    os.getenv("FINDOUT_SEARCH_RESULTS", "5")
                 ),
             ),
             pipeline=PipelineConfig(
                 default_variant=os.getenv(
-                    "SELF_VERIFY_PIPELINE", "hybrid"
+                    "FINDOUT_PIPELINE", "hybrid"
                 ),
                 gate_enabled=os.getenv(
-                    "SELF_VERIFY_GATE_ENABLED", "true"
+                    "FINDOUT_GATE_ENABLED", "true"
                 ).lower()
                 in ("true", "1", "yes"),
                 short_circuit_on_agreement=os.getenv(
-                    "SELF_VERIFY_SHORT_CIRCUIT", "true"
+                    "FINDOUT_SHORT_CIRCUIT", "true"
                 ).lower()
                 in ("true", "1", "yes"),
             ),

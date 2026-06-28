@@ -4,8 +4,8 @@ Takes the original query, the model's raw answer, and the search results,
 then produces a final grounded answer.
 """
 
-from self_verify.llm import LLMClient
-from self_verify.search_client import ClaimSearchResults
+from findout.llm import LLMClient
+from findout.search_client import ClaimSearchResults
 
 _SYSTEM = """You are a verification-aware editor. Your job:
 1. Take the user's original query and the model's raw answer (which may contain errors).

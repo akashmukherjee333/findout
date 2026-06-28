@@ -1,4 +1,4 @@
-"""CLI entry point for self-verify-pipelines.
+"""CLI entry point for findout.
 
 Usage:
   self-verify run "your research query here"
@@ -9,12 +9,12 @@ import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.table import Table
-from self_verify.config import Config
-from self_verify.pipeline import SelfVerifyPipeline
-from self_verify.gate import Gate
+from findout.config import Config
+from findout.pipeline import SelfVerifyPipeline
+from findout.gate import Gate
 
 app = typer.Typer(
-    name="self-verify",
+    name="findout",
     help="Single-model, multi-pass verification pipelines for LLM outputs.",
 )
 console = Console()

@@ -8,8 +8,8 @@ The gate is intentionally biased toward "research" — false positives
 cost tokens, false negatives cost correctness.
 """
 
-from self_verify.llm import LLMClient
-from self_verify.config import GateConfig, LLMConfig
+from findout.llm import LLMClient
+from findout.config import GateConfig, LLMConfig
 
 # Minimal system prompt — we want this fast, not thorough.
 _SYSTEM = """You classify queries into exactly one of two categories.

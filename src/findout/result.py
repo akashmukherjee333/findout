@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Optional
-from self_verify.search_client import ClaimSearchResults
+from findout.search_client import ClaimSearchResults
 
 
 @dataclass
